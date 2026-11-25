@@ -80,7 +80,7 @@ export const siteConfig: SiteConfig = {
   ],
   socials: [
     { label: 'Email', href: 'mailto:413769707@qq.com', icon: 'email' },
-    { label: 'GitHub', href: 'https://github.com', icon: 'github' },
+    { label: 'GitHub', href: 'https://github.com/silan-liu', icon: 'github' },
     { label: 'RSS', href: '/rss.xml', icon: 'rss' },
   ],
   skills: [

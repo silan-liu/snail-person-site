@@ -9,7 +9,7 @@ tags:
   - Local-first
 featured: true
 order: 1
-repoUrl: https://github.com
+repoUrl: https://github.com/silan-liu
 ---
 
 示例项目详情占位内容，可后续扩展为独立项目详情页。

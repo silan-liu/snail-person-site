@@ -9,7 +9,8 @@ tags:
   - TypeScript
 featured: true
 order: 4
-repoUrl: https://github.com
+repoUrl: https://github.com/silan-liu/snail-person-site
+demoUrl: https://snail-personal-site.summer199096.workers.dev
 ---
 
 示例项目详情占位内容。
