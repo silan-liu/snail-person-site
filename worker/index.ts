@@ -1,4 +1,4 @@
-import type { Env } from './env';
+import type { Env, ExecutionContext } from './env';
 
 interface PostStatsRow {
   slug: string;
@@ -153,7 +153,103 @@ async function handleSinglePostStats(
   return json({ error: 'Method Not Allowed' }, 405);
 }
 
-async function handleGuestbook(request: Request, env: Env): Promise<Response> {
+function formatBeijingTime(date = new Date()): string {
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date);
+}
+
+async function signDingTalkUrl(webhookUrl: string, secret?: string): Promise<string> {
+  if (!secret) return webhookUrl;
+  const timestamp = Date.now();
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(`${timestamp}\n${secret}`),
+  );
+  const bytes = new Uint8Array(signature);
+  let binary = '';
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  const sign = encodeURIComponent(btoa(binary));
+  const sep = webhookUrl.includes('?') ? '&' : '?';
+  return `${webhookUrl}${sep}timestamp=${timestamp}&sign=${sign}`;
+}
+
+async function notifyDingTalk(
+  env: Env,
+  payload: {
+    nickname: string;
+    email: string | null;
+    website: string | null;
+    content: string;
+    siteOrigin: string;
+  },
+): Promise<void> {
+  const webhook = env.DINGTALK_WEBHOOK?.trim();
+  if (!webhook) return;
+
+  try {
+    const targetUrl = await signDingTalkUrl(webhook, env.DINGTALK_SECRET?.trim());
+    const quotedContent = payload.content
+      .split(/\r?\n/)
+      .map((line) => `> ${line}`)
+      .join('\n');
+
+    const lines = [
+      '### 📬 个人网站收到新留言',
+      '',
+      `- **昵称**：${payload.nickname}`,
+      `- **邮箱**：${payload.email || '未填写'}`,
+      ...(payload.website ? [`- **主页**：${payload.website}`] : []),
+      `- **时间**：${formatBeijingTime()}`,
+      '',
+      quotedContent,
+      '',
+      `[查看留言板](${payload.siteOrigin}/guestbook)`,
+    ];
+
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({
+        msgtype: 'markdown',
+        markdown: {
+          title: `新留言：${payload.nickname}`,
+          text: lines.join('\n'),
+        },
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('DingTalk webhook failed:', res.status, await res.text());
+    }
+  } catch (err) {
+    console.error('DingTalk notification error:', err);
+  }
+}
+
+async function handleGuestbook(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> {
   if (request.method === 'GET') {
     const { results } = await env.DB.prepare(
       `SELECT id, nickname, website, content, created_at
@@ -201,6 +297,17 @@ async function handleGuestbook(request: Request, env: Env): Promise<Response> {
       .bind(nickname, emailRaw || null, website, content)
       .first<GuestbookRow>();
 
+    const siteOrigin = new URL(request.url).origin;
+    ctx.waitUntil(
+      notifyDingTalk(env, {
+        nickname,
+        email: emailRaw || null,
+        website,
+        content,
+        siteOrigin,
+      }),
+    );
+
     return json({ ok: true, message: inserted }, 201);
   }
 
@@ -208,7 +315,7 @@ async function handleGuestbook(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith('/api/')) {
@@ -225,7 +332,7 @@ export default {
         }
 
         if (url.pathname === '/api/guestbook') {
-          return await handleGuestbook(request, env);
+          return await handleGuestbook(request, env, ctx);
         }
 
         return json({ error: 'API Not Found' }, 404);

@@ -13,7 +13,14 @@ export interface AssetsFetcher {
   fetch(input: Request | string): Promise<Response>;
 }
 
+export interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void;
+  passThroughOnException(): void;
+}
+
 export interface Env {
   DB: D1Database;
   ASSETS: AssetsFetcher;
+  DINGTALK_WEBHOOK?: string;
+  DINGTALK_SECRET?: string;
 }
