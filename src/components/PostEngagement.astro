@@ -1,0 +1,180 @@
+---
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+---
+
+<section
+  data-post-engagement={slug}
+  aria-label="文章互动"
+  class="mt-12 rounded-2xl border border-line bg-surface p-6 sm:p-7"
+>
+  <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div>
+      <p class="text-sm font-medium text-ink">觉得这篇文章有启发？</p>
+      <p class="mt-1 text-xs text-ink-muted">
+        点个赞支持一下，或去
+        <a href="/guestbook" class="text-accent underline underline-offset-4 hover:opacity-80">
+          留言板
+        </a>
+        分享你的想法。
+      </p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        data-like-btn
+        aria-pressed="false"
+        class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-line bg-canvas px-4 py-2 text-sm font-medium text-ink transition-all hover:border-line-strong active:scale-95"
+      >
+        <svg
+          data-like-icon
+          class="h-4 w-4 transition-transform duration-200"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.9"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
+          ></path>
+        </svg>
+        <span data-like-text>点赞</span>
+        <span data-like-count class="font-mono text-xs text-ink-muted">--</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  const container = document.querySelector<HTMLElement>('[data-post-engagement]');
+  const slug = container?.dataset.postEngagement;
+
+  if (container && slug) {
+    const postSlug: string = slug;
+    const likeBtn = container.querySelector<HTMLButtonElement>('[data-like-btn]');
+    const likeIcon = container.querySelector<SVGElement>('[data-like-icon]');
+    const likeText = container.querySelector<HTMLSpanElement>('[data-like-text]');
+    const likeCountEl = container.querySelector<HTMLSpanElement>('[data-like-count]');
+    const viewsWrap = document.querySelector<HTMLElement>('[data-post-views]');
+    const viewsCountEl = document.querySelector<HTMLElement>('[data-post-views-count]');
+
+    const STORAGE_KEY = 'snail_liked_posts_v1';
+    const VIEW_SESSION_KEY = `snail_viewed:${postSlug}`;
+
+    function getLikedSet(): Set<string> {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveLikedSet(set: Set<string>) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(set)));
+      } catch {
+        // ignore storage failures
+      }
+    }
+
+    let isLiked = getLikedSet().has(postSlug);
+    let currentLikes = 0;
+    let isSubmitting = false;
+
+    function renderLikeState() {
+      if (!likeBtn || !likeIcon || !likeText || !likeCountEl) return;
+      likeBtn.setAttribute('aria-pressed', String(isLiked));
+      likeText.textContent = isLiked ? '已点赞' : '点赞';
+      likeCountEl.textContent = String(currentLikes);
+
+      if (isLiked) {
+        likeBtn.classList.add('border-accent', 'bg-accent-soft', 'text-accent');
+        likeBtn.classList.remove('border-line', 'bg-canvas', 'text-ink');
+        likeIcon.setAttribute('fill', 'currentColor');
+      } else {
+        likeBtn.classList.remove('border-accent', 'bg-accent-soft', 'text-accent');
+        likeBtn.classList.add('border-line', 'bg-canvas', 'text-ink');
+        likeIcon.setAttribute('fill', 'none');
+      }
+    }
+
+    function renderViews(views: number) {
+      if (!viewsWrap || !viewsCountEl) return;
+      viewsCountEl.textContent = String(views);
+      viewsWrap.classList.remove('hidden');
+    }
+
+    async function initStats() {
+      const alreadyViewed = sessionStorage.getItem(VIEW_SESSION_KEY) === '1';
+      const endpoint = alreadyViewed
+        ? `/api/posts/${encodeURIComponent(postSlug)}/stats`
+        : `/api/posts/${encodeURIComponent(postSlug)}/view`;
+
+      try {
+        const res = await fetch(endpoint, {
+          method: alreadyViewed ? 'GET' : 'POST',
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { views?: number; likes?: number };
+        if (!alreadyViewed) {
+          sessionStorage.setItem(VIEW_SESSION_KEY, '1');
+        }
+        if (typeof data.views === 'number') renderViews(data.views);
+        if (typeof data.likes === 'number') {
+          currentLikes = data.likes;
+          renderLikeState();
+        }
+      } catch {
+        // Gracefully stay silent in offline/static-only preview
+      }
+    }
+
+    likeBtn?.addEventListener('click', async () => {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
+      const nextLiked = !isLiked;
+      const previousLikes = currentLikes;
+      isLiked = nextLiked;
+      currentLikes = Math.max(0, currentLikes + (nextLiked ? 1 : -1));
+      renderLikeState();
+
+      const likedSet = getLikedSet();
+      if (nextLiked) likedSet.add(postSlug);
+      else likedSet.delete(postSlug);
+      saveLikedSet(likedSet);
+
+      try {
+        const res = await fetch(`/api/posts/${encodeURIComponent(postSlug)}/like`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: nextLiked ? 'like' : 'unlike' }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { likes?: number };
+          if (typeof data.likes === 'number') {
+            currentLikes = data.likes;
+            renderLikeState();
+          }
+        }
+      } catch {
+        isLiked = !nextLiked;
+        currentLikes = previousLikes;
+        renderLikeState();
+      } finally {
+        isSubmitting = false;
+      }
+    });
+
+    renderLikeState();
+    initStats();
+  }
+</script>

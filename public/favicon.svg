@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <style>
+    .bg { fill: #18181b; }
+    .stroke-main { stroke: #faf9f6; }
+    .dot { fill: #2dd4bf; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #faf9f6; }
+      .stroke-main { stroke: #18181b; }
+      .dot { fill: #0f766e; }
+    }
+  </style>
+  <rect class="bg" width="64" height="64" rx="16" />
+  <path
+    class="stroke-main"
+    d="M32 44c8.837 0 16-6.268 16-14s-7.163-14-16-14c-7.18 0-13 5.149-13 11.5 0 5.247 4.477 9.5 10 9.5 4.418 0 8-3.134 8-7 0-2.761-2.462-5-5.5-5-2.209 0-4 1.567-4 3.5"
+    stroke-width="3.6"
+    stroke-linecap="round"
+  />
+  <circle class="dot" cx="22" cy="44" r="3" />
+</svg>

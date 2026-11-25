@@ -1,0 +1,84 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
+
+const projects = (await getCollection('projects')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const allTags = Array.from(
+  new Set(projects.flatMap((project) => project.data.tags)),
+);
+---
+
+<BaseLayout
+  title="项目"
+  description="微微笑的蜗牛参与和独立构建的代表作品，涵盖全栈 Web 应用、效率工具与跨端开发实践。"
+>
+  <section class="animate-fade-up">
+    <p class="font-mono text-xs uppercase tracking-wider text-accent">Projects</p>
+    <h1 class="mt-1.5 text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+      项目与作品
+    </h1>
+    <p class="mt-3 max-w-2xl text-base leading-relaxed text-ink-secondary">
+      围绕全栈工程、开发效率与本地优先体验打造的产品和开源实验，追求清晰的结构与顺手的细节。
+    </p>
+
+    <!-- Tag Filter Bar -->
+    <div class="mt-8 flex flex-wrap items-center gap-2" role="group" aria-label="按标签筛选项目">
+      <button
+        type="button"
+        data-filter-tag="all"
+        aria-pressed="true"
+        class="filter-btn cursor-pointer rounded-full border border-ink bg-ink px-3.5 py-1 text-xs font-medium text-canvas transition-colors"
+      >
+        全部 ({projects.length})
+      </button>
+      {
+        allTags.map((tag) => (
+          <button
+            type="button"
+            data-filter-tag={tag}
+            aria-pressed="false"
+            class="filter-btn cursor-pointer rounded-full border border-line bg-surface px-3.5 py-1 text-xs font-medium text-ink-secondary transition-colors hover:border-line-strong hover:text-ink"
+          >
+            {tag}
+          </button>
+        ))
+      }
+    </div>
+
+    <!-- Project Grid -->
+    <div class="mt-8 grid gap-4 sm:grid-cols-2" id="projects-grid">
+      {projects.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.filter-btn');
+  const cards = document.querySelectorAll<HTMLElement>('[data-project-card]');
+
+  const activeClasses = ['border-ink', 'bg-ink', 'text-canvas'];
+  const inactiveClasses = ['border-line', 'bg-surface', 'text-ink-secondary', 'hover:border-line-strong', 'hover:text-ink'];
+
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const selected = btn.dataset.filterTag || 'all';
+
+      buttons.forEach((item) => {
+        const isCurrent = item === btn;
+        item.setAttribute('aria-pressed', String(isCurrent));
+        item.classList.remove(...(isCurrent ? inactiveClasses : activeClasses));
+        item.classList.add(...(isCurrent ? activeClasses : inactiveClasses));
+      });
+
+      cards.forEach((card) => {
+        const tags = (card.dataset.tags || '').split(',');
+        const visible = selected === 'all' || tags.includes(selected);
+        card.classList.toggle('hidden', !visible);
+      });
+    });
+  });
+</script>

@@ -1,0 +1,46 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { estimateReadingMinutes, formatDate } from '@/utils/format';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+  showTags?: boolean;
+}
+
+const { post, showTags = false } = Astro.props;
+const readingMinutes = estimateReadingMinutes(post.body);
+---
+
+<article data-post-row data-slug={post.id} data-tags={post.data.tags.join(',')}>
+  <a
+    href={`/blog/${post.id}`}
+    class="group -mx-3 flex flex-col justify-between gap-2 rounded-xl px-3 py-4 transition-colors hover:bg-surface-subtle/80 sm:flex-row sm:items-baseline sm:gap-6"
+  >
+    <div class="min-w-0 flex-1">
+      <h3 class="text-base font-medium tracking-tight text-ink transition-colors group-hover:text-accent">
+        {post.data.title}
+      </h3>
+      <p class="mt-1 line-clamp-2 text-sm leading-relaxed text-ink-secondary">
+        {post.data.description}
+      </p>
+      {
+        showTags && post.data.tags.length > 0 && (
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            {post.data.tags.map((tag) => (
+              <span class="rounded bg-surface-subtle px-2 py-0.5 text-xs text-ink-muted">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )
+      }
+    </div>
+
+    <div class="flex shrink-0 items-center gap-2 font-mono text-xs text-ink-muted sm:text-right">
+      <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+      <span aria-hidden="true">·</span>
+      <span>{readingMinutes} 分钟</span>
+      <span data-row-stats={post.id} class="hidden"></span>
+    </div>
+  </a>
+</article>

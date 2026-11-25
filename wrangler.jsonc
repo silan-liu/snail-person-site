@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "snail-personal-site",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-11-25",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "snail-site-db",
+      "database_id": "6c90b360-b846-400c-ab84-c2590eed108d"
+    }
+  ]
+}

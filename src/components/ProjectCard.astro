@@ -1,0 +1,95 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, summary, year, role, tags, repoUrl, demoUrl } = project.data;
+const primaryHref = demoUrl || repoUrl;
+---
+
+<article
+  data-project-card
+  data-tags={tags.join(',')}
+  class="group flex h-full flex-col justify-between rounded-2xl border border-line bg-surface p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-line-strong"
+>
+  <div>
+    <div class="mb-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-xs text-ink-muted">
+        <span class="font-mono">{year}</span>
+        {role && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{role}</span>
+          </>
+        )}
+      </div>
+
+      <div class="flex items-center gap-2.5 text-xs text-ink-muted">
+        {
+          repoUrl && (
+            <a
+              href={repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 transition-colors hover:text-ink"
+              aria-label={`查看 ${title} 源码`}
+            >
+              <span>源码</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          )
+        }
+        {
+          demoUrl && (
+            <a
+              href={demoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 transition-colors hover:text-accent"
+              aria-label={`访问 ${title} 演示`}
+            >
+              <span>预览</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          )
+        }
+      </div>
+    </div>
+
+    <h3 class="text-lg font-semibold tracking-tight text-ink">
+      {
+        primaryHref ? (
+          <a
+            href={primaryHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-colors group-hover:text-accent"
+          >
+            {title}
+          </a>
+        ) : (
+          title
+        )
+      }
+    </h3>
+
+    <p class="mt-2.5 text-sm leading-relaxed text-ink-secondary">
+      {summary}
+    </p>
+  </div>
+
+  {
+    tags.length > 0 && (
+      <ul class="mt-5 flex flex-wrap gap-1.5" aria-label="技术标签">
+        {tags.map((tag) => (
+          <li class="rounded-md bg-surface-subtle px-2.5 py-0.5 text-xs text-ink-secondary">
+            {tag}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</article>

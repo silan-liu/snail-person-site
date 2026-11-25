@@ -1,0 +1,39 @@
+---
+import { siteConfig } from '@/config/site';
+
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="border-t border-line/80">
+  <div
+    class="mx-auto flex max-w-4xl flex-col gap-4 px-6 py-10 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between sm:px-8"
+  >
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span>© {currentYear} {siteConfig.name}</span>
+      <span aria-hidden="true">·</span>
+      <span>Built with Astro & Tailwind CSS</span>
+    </div>
+
+    <div class="flex items-center gap-4">
+      {
+        siteConfig.socials.map((item) => {
+          const isExternal = item.href.startsWith('http');
+          return (
+            <a
+              href={item.href}
+              target={isExternal ? '_blank' : undefined}
+              rel={isExternal ? 'noopener noreferrer' : undefined}
+              class="transition-colors hover:text-ink"
+            >
+              {item.label}
+            </a>
+          );
+        })
+      }
+      <span class="text-line-strong" aria-hidden="true">|</span>
+      <a href="#top" class="transition-colors hover:text-ink" aria-label="返回页面顶部">
+        顶部 ↑
+      </a>
+    </div>
+  </div>
+</footer>

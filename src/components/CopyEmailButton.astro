@@ -1,0 +1,63 @@
+---
+import { siteConfig } from '@/config/site';
+
+interface Props {
+  email?: string;
+  variant?: 'primary' | 'secondary';
+}
+
+const { email = siteConfig.email, variant = 'secondary' } = Astro.props;
+---
+
+<button
+  type="button"
+  data-copy-email={email}
+  class:list={[
+    'inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
+    variant === 'primary'
+      ? 'bg-ink text-canvas hover:opacity-90'
+      : 'border border-line bg-surface text-ink hover:border-line-strong hover:bg-surface-subtle',
+  ]}
+>
+  <svg
+    class="h-4 w-4 shrink-0"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+  </svg>
+  <span data-copy-label>复制邮箱</span>
+</button>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy-email]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const email = btn.dataset.copyEmail;
+      const label = btn.querySelector<HTMLSpanElement>('[data-copy-label]');
+      if (!email || !label) return;
+
+      try {
+        await navigator.clipboard.writeText(email);
+      } catch {
+        const input = document.createElement('input');
+        input.value = email;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      }
+
+      const originalText = label.textContent || '复制邮箱';
+      label.textContent = '已复制邮箱 ✓';
+      window.setTimeout(() => {
+        label.textContent = originalText;
+      }, 2000);
+    });
+  });
+</script>

@@ -1,0 +1,150 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProjectCard from '@/components/ProjectCard.astro';
+import PostRow from '@/components/PostRow.astro';
+import CopyEmailButton from '@/components/CopyEmailButton.astro';
+import { siteConfig } from '@/config/site';
+
+const allProjects = await getCollection('projects');
+const featuredProjects = allProjects
+  .filter((item) => item.data.featured)
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 4);
+
+const allPosts = await getCollection('blog', ({ data }) => !data.draft);
+const recentPosts = allPosts
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 4);
+---
+
+<BaseLayout>
+  <!-- Hero Section -->
+  <section class="animate-fade-up pb-16 sm:pb-20">
+    <div
+      class="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1 text-xs text-ink-secondary"
+    >
+      <span class="relative flex h-2 w-2" aria-hidden="true">
+        <span
+          class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+        ></span>
+        <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+      </span>
+      <span>{siteConfig.status}</span>
+    </div>
+
+    <h1 class="mt-6 text-3xl font-semibold tracking-tight text-ink sm:text-5xl sm:leading-[1.15]">
+      你好，我是{siteConfig.name}
+      <span class="mt-2 block text-xl font-normal text-ink-secondary sm:text-2xl">
+        {siteConfig.role} · {siteConfig.tagline}
+      </span>
+    </h1>
+
+    <p class="mt-6 max-w-2xl text-base leading-relaxed text-ink-secondary">
+      {siteConfig.description}
+    </p>
+
+    <div class="mt-8 flex flex-wrap items-center gap-3">
+      <a
+        href="/projects"
+        class="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-2.5 text-sm font-medium text-canvas transition-opacity hover:opacity-90"
+      >
+        <span>查看精选项目</span>
+        <span aria-hidden="true">→</span>
+      </a>
+      <a
+        href="/about"
+        class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-surface-subtle"
+      >
+        <span>关于我与经历</span>
+      </a>
+      <CopyEmailButton />
+    </div>
+  </section>
+
+  <!-- Featured Projects -->
+  <section class="border-t border-line py-14 sm:py-16" aria-labelledby="featured-projects-heading">
+    <div class="mb-8 flex items-end justify-between gap-4">
+      <div>
+        <p class="font-mono text-xs uppercase tracking-wider text-accent">Selected Work</p>
+        <h2 id="featured-projects-heading" class="mt-1 text-2xl font-semibold tracking-tight text-ink">
+          精选项目
+        </h2>
+      </div>
+      <a
+        href="/projects"
+        class="text-sm text-ink-secondary transition-colors hover:text-ink"
+      >
+        全部项目 →
+      </a>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      {featuredProjects.map((project) => <ProjectCard project={project} />)}
+    </div>
+  </section>
+
+  <!-- Recent Posts -->
+  <section class="border-t border-line py-14 sm:py-16" aria-labelledby="recent-posts-heading">
+    <div class="mb-6 flex items-end justify-between gap-4">
+      <div>
+        <p class="font-mono text-xs uppercase tracking-wider text-accent">Writing</p>
+        <h2 id="recent-posts-heading" class="mt-1 text-2xl font-semibold tracking-tight text-ink">
+          最新文章
+        </h2>
+      </div>
+      <a
+        href="/blog"
+        class="text-sm text-ink-secondary transition-colors hover:text-ink"
+      >
+        阅读全部 →
+      </a>
+    </div>
+
+    <div class="divide-y divide-line/70">
+      {recentPosts.map((post) => <PostRow post={post} />)}
+    </div>
+  </section>
+
+  <!-- Contact Callout -->
+  <section class="border-t border-line pt-14 sm:pt-16" aria-labelledby="contact-heading">
+    <div class="rounded-2xl border border-line bg-surface p-7 sm:p-9">
+      <div class="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+        <div class="max-w-lg">
+          <p class="font-mono text-xs uppercase tracking-wider text-accent">Get in Touch</p>
+          <h2 id="contact-heading" class="mt-1.5 text-xl font-semibold tracking-tight text-ink sm:text-2xl">
+            一起交流技术，或者聊聊新想法
+          </h2>
+          <p class="mt-2.5 text-sm leading-relaxed text-ink-secondary">
+            无论是产品合作、全栈架构交流，还是对某篇文章的反馈，都欢迎直接发送邮件至
+            <a
+              href={`mailto:${siteConfig.email}`}
+              class="font-mono text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:text-accent"
+            >
+              {siteConfig.email}
+            </a>
+            。
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <a
+            href="/guestbook"
+            class="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-2.5 text-sm font-medium text-canvas transition-opacity hover:opacity-90"
+          >
+            <span>在线留言</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <a
+            href={`mailto:${siteConfig.email}`}
+            class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-line-strong hover:bg-surface-subtle"
+          >
+            <span>发送邮件</span>
+            <span aria-hidden="true">↗</span>
+          </a>
+          <CopyEmailButton />
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
